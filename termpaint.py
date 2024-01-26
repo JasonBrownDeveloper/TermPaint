@@ -5,6 +5,38 @@ import csv
 
 toolbox = {}
 canvas = {}
+glyphs = {
+      'unicode' : {
+          'Horizontal' : '─'
+        , 'Vertical' : '│'
+        , 'Down and Right' : '┌'
+        , 'Down and Left' : '┐'
+        , 'Up and Right' : '└'
+        , 'Up and Left' : '┘'
+        , 'Vertical and Right' : '├'
+        , 'Vertical and Left' : '┤'
+        , 'Horizontal and Down' : '┬'
+        , 'Horizontal and Up' : '┴'
+        , 'Vertical and Horizontal' : '┼'
+        , 'Diagonal Right Left' : '╱'
+        , 'Diagonal Left Right' : '╲'
+        , 'Diagonal Cross' : '╳' }
+
+    , 'ascii' : {
+          'Horizontal' : '-'
+        , 'Vertical' : '|'
+        , 'Down and Right' : '+'
+        , 'Down and Left' : '+'
+        , 'Up and Right' : '+'
+        , 'Up and Left' : '+'
+        , 'Vertical and Right' : '+'
+        , 'Vertical and Left' : '+'
+        , 'Horizontal and Down' : '+'
+        , 'Horizontal and Up' : '+'
+        , 'Vertical and Horizontal' : '+'
+        , 'Diagonal Right Left' : '/'
+        , 'Diagonal Left Right' : '\\'
+        , 'Diagonal Cross' : 'X' } }
 
 # Box
 parser = argparse.ArgumentParser( prog='Box', description='Draw a box' )
@@ -13,24 +45,26 @@ parser.add_argument( 'Y', type=int )
 parser.add_argument( 'Height', type=int )
 parser.add_argument( 'Width', type=int )
 
-def Box( args ):
-    canvas.setdefault( args.Y, {} )[ args.X ] = '+'
+def Box( args, attributes ):
+    g = glyphs[ args.glyphs ]
 
-    for i in range( 1, args.Width - 1 ):
-        canvas[ args.Y ][ args.X + i ] = '-'
+    canvas.setdefault( attributes.Y, {} )[ attributes.X ] = g[ 'Down and Right' ]
 
-    canvas[ args.Y ][ args.X + args.Width - 1 ] = '+'
+    for i in range( 1, attributes.Width - 1 ):
+        canvas[ attributes.Y ][ attributes.X + i ] = g[ 'Horizontal' ]
 
-    for i in range( 1, args.Height - 1 ):
-        canvas.setdefault( args.Y + i, {} )[ args.X ] = '|'
-        canvas.setdefault( args.Y + i, {} )[ args.X + args.Width - 1 ] = '|'
+    canvas[ attributes.Y ][ attributes.X + attributes.Width - 1 ] = g[ 'Down and Left' ]
 
-    canvas.setdefault( args.Y + args.Height - 1, {} )[ args.X ] = '+'
+    for i in range( 1, attributes.Height - 1 ):
+        canvas.setdefault( attributes.Y + i, {} )[ attributes.X ] = g[ 'Vertical' ]
+        canvas.setdefault( attributes.Y + i, {} )[ attributes.X + attributes.Width - 1 ] = g[ 'Vertical' ]
 
-    for i in range( 1, args.Width - 1 ):
-        canvas[ args.Y + args.Height - 1 ][ args.X + i ] = '-'
+    canvas.setdefault( attributes.Y + attributes.Height - 1, {} )[ attributes.X ] = g[ 'Up and Right' ]
 
-    canvas[ args.Y + args.Height - 1 ][ args.X + args.Width - 1 ] = '+'
+    for i in range( 1, attributes.Width - 1 ):
+        canvas[ attributes.Y + attributes.Height - 1 ][ attributes.X + i ] = g[ 'Horizontal' ]
+
+    canvas[ attributes.Y + attributes.Height - 1 ][ attributes.X + attributes.Width - 1 ] = g[ 'Up and Left' ]
 
 toolbox[ 'Box' ] = ( parser, Box )
 
@@ -40,32 +74,52 @@ parser.add_argument( 'X', type=int )
 parser.add_argument( 'Y', type=int )
 parser.add_argument( 'row', nargs='*' )
 
-def Table( args ):
-    table = list( csv.reader( args.row ) )
+def Table( args, attributes ):
+    g = glyphs[ args.glyphs ]
+
+    table = list( csv.reader( attributes.row ) )
     col_len = max( [ len( i ) for i in table ] )
     cell_len = max( [ len( j ) for i in table for j in i ] ) + 1
 
     for y, row in enumerate( table ):
         for x, column in enumerate( row ):
-            canvas.setdefault( args.Y + ( y * 2 ), {} )[ args.X + ( x * cell_len ) ] = '+'
+            if y == 0 and x == 0:
+                canvas.setdefault( attributes.Y + ( y * 2 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Down and Right' ]
+            elif y == 0:
+                canvas.setdefault( attributes.Y + ( y * 2 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Horizontal and Down' ]
+            elif x == 0:
+                canvas.setdefault( attributes.Y + ( y * 2 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Vertical and Right' ]
+            else:
+                canvas.setdefault( attributes.Y + ( y * 2 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Vertical and Horizontal' ]
+
             for c in range( cell_len - 1 ):
-                canvas[ args.Y + ( y * 2 ) ][ args.X + 1 + ( x * cell_len ) + c ] = '-'
-        canvas[ args.Y + ( y * 2 ) ][ args.X + ( col_len * cell_len ) ] = '+'
+                canvas[ attributes.Y + ( y * 2 ) ][ attributes.X + 1 + ( x * cell_len ) + c ] = g[ 'Horizontal' ]
+
+        if y == 0:
+            canvas[ attributes.Y + ( y * 2 ) ][ attributes.X + ( col_len * cell_len ) ] = g[ 'Down and Left' ]
+        else:
+            canvas[ attributes.Y + ( y * 2 ) ][ attributes.X + ( col_len * cell_len ) ] = g[ 'Vertical and Left' ]
 
         for x, column in enumerate( row ):
-            canvas.setdefault( args.Y + ( y * 2 + 1 ), {} )[ args.X + ( x * cell_len ) ] = '|'
+            canvas.setdefault( attributes.Y + ( y * 2 + 1 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Vertical' ]
             for c in range( cell_len - 1 ):
-                canvas[ args.Y + ( y * 2 + 1 ) ][ args.X + 1 + ( x * cell_len ) + c ] = column[ c ] if c < len( column ) else ' '
-        canvas[ args.Y + ( y * 2 + 1 ) ][ args.X + ( col_len * cell_len ) ] = '|'
+                canvas[ attributes.Y + ( y * 2 + 1 ) ][ attributes.X + 1 + ( x * cell_len ) + c ] = column[ c ] if c < len( column ) else ' '
+
+        canvas[ attributes.Y + ( y * 2 + 1 ) ][ attributes.X + ( col_len * cell_len ) ] = g[ 'Vertical' ]
 
     for x in range( col_len ):
-        canvas.setdefault( args.Y + ( len( table ) * 2 ), {} )[ args.X + ( x * cell_len ) ] = '+'
+        if x == 0:
+            canvas.setdefault( attributes.Y + ( len( table ) * 2 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Up and Right' ]
+        else:
+            canvas.setdefault( attributes.Y + ( len( table ) * 2 ), {} )[ attributes.X + ( x * cell_len ) ] = g[ 'Horizontal and Up' ]
+
         for c in range( cell_len - 1 ):
-            canvas[ args.Y + len( table ) * 2 ][ args.X + 1 + ( x * cell_len ) + c ] = '-'
-    canvas[ args.Y + len( table ) * 2 ][ args.X + ( col_len * cell_len ) ] = '+'
+            canvas[ attributes.Y + len( table ) * 2 ][ attributes.X + 1 + ( x * cell_len ) + c ] = g[ 'Horizontal' ]
+
+    canvas[ attributes.Y + len( table ) * 2 ][ attributes.X + ( col_len * cell_len ) ] = g[ 'Up and Left' ]
 
 toolbox[ 'Table' ] = ( parser, Table )
- 
+
 # Minkowski Line
 parser = argparse.ArgumentParser( prog='MLine', description='Draw a Minkowski line' )
 parser.add_argument( 'Sx', type=int )
@@ -73,37 +127,39 @@ parser.add_argument( 'Sy', type=int )
 parser.add_argument( 'Ex', type=int )
 parser.add_argument( 'Ey', type=int )
 
-def MLine( args ):
-    Sx, Ex = sorted( [ args.Sx, args.Ex ] )
+def MLine( args, attributes ):
+    g = glyphs[ args.glyphs ]
+
+    Sx, Ex = sorted( [ attributes.Sx, attributes.Ex ] )
     halfX = ( ( Ex - Sx ) // 2 )
-    Sy, Ey = sorted( [ args.Sy, args.Ey ] )
+    Sy, Ey = sorted( [ attributes.Sy, attributes.Ey ] )
     halfY = ( ( Ey - Sy ) // 2 )
 
     if halfX < halfY:
-        canvas.setdefault( Sy, {} )[ Sx + halfX ] = '+'
+        canvas.setdefault( Sy, {} )[ Sx + halfX ] = g[ 'Down and Left' ]
         for i in range( halfX ):
-            canvas[ Sy ][ Sx + i ] = '-'
+            canvas[ Sy ][ Sx + i ] = g[ 'Horizontal' ]
 
         for i in range( 1, Ey - Sy ):
-            canvas.setdefault( Sy + i, {} )[ Sx + halfX ] = '|'
+            canvas.setdefault( Sy + i, {} )[ Sx + halfX ] = g[ 'Vertical' ]
 
-        canvas.setdefault( Ey, {} )[ Sx + halfX ] = '+'
+        canvas.setdefault( Ey, {} )[ Sx + halfX ] = g[ 'Up and Right' ]
         for i in range( Ex - Sx - halfX ):
-            canvas[ Ey ][ Sx + halfX + 1 + i ] = '-'
+            canvas[ Ey ][ Sx + halfX + 1 + i ] = g[ 'Horizontal' ]
 
     else:
         for i in range( halfY ):
-            canvas.setdefault( Sy + i, {} )[ Sx ] = '|'
+            canvas.setdefault( Sy + i, {} )[ Sx ] = g[ 'Vertical' ]
 
-        canvas.setdefault( Sy + halfY, {} )[ Sx ] = '+'
+        canvas.setdefault( Sy + halfY, {} )[ Sx ] = g[ 'Up and Right' ]
 
         for i in range( 1, Ex - Sx ):
-            canvas[ Sy + halfY ][ Sx + i ] = '-'
+            canvas[ Sy + halfY ][ Sx + i ] = g[ 'Horizontal' ]
 
-        canvas[ Sy + halfY ][ Ex ] = '+'
+        canvas[ Sy + halfY ][ Ex ] = g[ 'Down and Left' ]
 
         for i in range( Ey - Sy - halfY ):
-            canvas.setdefault( Sy + halfY + 1 + i, {} )[ Ex ] = '|'
+            canvas.setdefault( Sy + halfY + 1 + i, {} )[ Ex ] = g[ 'Vertical' ]
 
 toolbox[ 'MLine' ] = ( parser, MLine )
 
@@ -114,16 +170,28 @@ parser.add_argument( 'Sy', type=int )
 parser.add_argument( 'Ex', type=int )
 parser.add_argument( 'Ey', type=int )
 
-def BLine( args ):
-    dx = abs( args.Ex - args.Sx )
-    sx = 1 if args.Sx < args.Ex else -1
-    dy = -abs( args.Ey - args.Sy )
-    sy = 1 if args.Sy < args.Ey else -1
+def BLine( args, attributes ):
+    g = glyphs[ args.glyphs ]
+
+    dx = abs( attributes.Ex - attributes.Sx )
+    sx = 1 if attributes.Sx < attributes.Ex else -1
+    dy = -abs( attributes.Ey - attributes.Sy )
+    sy = 1 if attributes.Sy < attributes.Ey else -1
     error = dx + dy
-    
-    x0, y0, x1, y1 = args.Sx, args.Sy, args.Ex, args.Ey
+
+    char = {
+          True : {
+               1 : ( g[ 'Horizontal' ], g[ 'Up and Right' ], g[ 'Down and Left' ] )
+            , -1 : ( g[ 'Horizontal' ], g[ 'Up and Left' ], g[ 'Down and Right' ] ) }
+        , False : {
+               1 : ( g[ 'Vertical' ], g[ 'Down and Left' ], g[ 'Up and Right' ] )
+            , -1 : ( g[ 'Vertical' ], g[ 'Down and Right' ], g[ 'Up and Left' ] ) }
+        }[ -dy < dx ][ sx ]
+
+    x0, y0, x1, y1 = attributes.Sx, attributes.Sy, attributes.Ex, attributes.Ey
     while True:
-        canvas.setdefault( y0, {} )[ x0 ] = 'L'
+        canvas.setdefault( y0, {} )[ x0 ] = char[ 0 ]
+
         if x0 == x1 and y0 == y1:
             break
 
@@ -132,6 +200,9 @@ def BLine( args ):
             if x0 == x1:
                 break
 
+            if -dy > dx:
+                canvas.setdefault( y0, {} )[ x0 + sx ] = char[ 1 ]
+                canvas.setdefault( y0, {} )[ x0 ] = char[ 2 ]
             error = error + dy
             x0 = x0 + sx
 
@@ -139,6 +210,9 @@ def BLine( args ):
             if y0 == y1:
                 break
 
+            if -dy < dx:
+                canvas.setdefault( y0 + sy, {} )[ x0 - sx ] = char[ 1 ]
+                canvas.setdefault( y0, {} )[ x0 - sx ] = char[ 2 ]
             error = error + dx
             y0 = y0 + sy
 
@@ -146,35 +220,53 @@ toolbox[ 'BLine' ] = ( parser, BLine )
 
 # Circle
 # https://www.computerenhance.com/p/efficient-dda-circle-outlines
-parser = argparse.ArgumentParser( prog='Line', description='Draw a circle' )
+parser = argparse.ArgumentParser( prog='Circle', description='Draw a circle' )
 parser.add_argument( 'Cx', type=int )
 parser.add_argument( 'Cy', type=int )
 parser.add_argument( 'R', type=int )
 
-def Circle( args ):
-    R2 = args.R + args.R
+def Circle( args, attributes ):
+    g = glyphs[ args.glyphs ]
 
-    X = args.R
+    R2 = attributes.R + attributes.R
+
+    X = attributes.R
     Y = 0
     dY = -2
     dX = R2 + R2 - 4
     D = R2 - 1
 
     while Y <= X:
-        canvas.setdefault( args.Cy - Y, {} )[ args.Cx - X ] = 'a'
-        canvas.setdefault( args.Cy - Y, {} )[ args.Cx + X ] = 'b'
-        canvas.setdefault( args.Cy + Y, {} )[ args.Cx - X ] = 'c'
-        canvas.setdefault( args.Cy + Y, {} )[ args.Cx + X ] = 'd'
-        canvas.setdefault( args.Cy - X, {} )[ args.Cx - Y ] = 'e'
-        canvas.setdefault( args.Cy - X, {} )[ args.Cx + Y ] = 'f'
-        canvas.setdefault( args.Cy + X, {} )[ args.Cx - Y ] = 'g'
-        canvas.setdefault( args.Cy + X, {} )[ args.Cx + Y ] = 'h'
+        canvas.setdefault( attributes.Cy - Y, {} )[ attributes.Cx - X ] = g[ 'Vertical' ]
+        canvas.setdefault( attributes.Cy - Y, {} )[ attributes.Cx + X ] = g[ 'Vertical' ]
+        canvas.setdefault( attributes.Cy + Y, {} )[ attributes.Cx - X ] = g[ 'Vertical' ]
+        canvas.setdefault( attributes.Cy + Y, {} )[ attributes.Cx + X ] = g[ 'Vertical' ]
+        canvas.setdefault( attributes.Cy - X, {} )[ attributes.Cx - Y ] = g[ 'Horizontal' ]
+        canvas.setdefault( attributes.Cy - X, {} )[ attributes.Cx + Y ] = g[ 'Horizontal' ]
+        canvas.setdefault( attributes.Cy + X, {} )[ attributes.Cx - Y ] = g[ 'Horizontal' ]
+        canvas.setdefault( attributes.Cy + X, {} )[ attributes.Cx + Y ] = g[ 'Horizontal' ]
 
         D += dY
         dY -= 4
         Y += 1
 
         if D < 0:
+            canvas.setdefault( attributes.Cy - Y + 1, {} )[ attributes.Cx - X ] = g[ 'Down and Right' ]
+            canvas.setdefault( attributes.Cy - Y + 1, {} )[ attributes.Cx - X + 1] = g[ 'Up and Left' ]
+            canvas.setdefault( attributes.Cy - Y + 1, {} )[ attributes.Cx + X ] = g[ 'Down and Left' ]
+            canvas.setdefault( attributes.Cy - Y + 1, {} )[ attributes.Cx + X - 1] = g[ 'Up and Right' ]
+            canvas.setdefault( attributes.Cy + Y - 1, {} )[ attributes.Cx - X + 1 ] = g[ 'Down and Left' ]
+            canvas.setdefault( attributes.Cy + Y - 1, {} )[ attributes.Cx - X ] = g[ 'Up and Right' ]
+            canvas.setdefault( attributes.Cy + Y - 1, {} )[ attributes.Cx + X - 1 ] = g[ 'Down and Right' ]
+            canvas.setdefault( attributes.Cy + Y - 1, {} )[ attributes.Cx + X ] = g[ 'Up and Left' ]
+            canvas.setdefault( attributes.Cy - X, {} )[ attributes.Cx - Y + 1 ] = g[ 'Down and Right' ]
+            canvas.setdefault( attributes.Cy - X + 1, {} )[ attributes.Cx - Y + 1 ] = g[ 'Up and Left' ]
+            canvas.setdefault( attributes.Cy - X, {} )[ attributes.Cx + Y - 1 ] = g[ 'Down and Left' ]
+            canvas.setdefault( attributes.Cy - X + 1, {} )[ attributes.Cx + Y - 1 ] = g[ 'Up and Right' ]
+            canvas.setdefault( attributes.Cy + X, {} )[ attributes.Cx - Y + 1 ] = g[ 'Up and Right' ]
+            canvas.setdefault( attributes.Cy + X - 1, {} )[ attributes.Cx - Y + 1 ] = g[ 'Down and Left' ]
+            canvas.setdefault( attributes.Cy + X, {} )[ attributes.Cx + Y - 1 ] = g[ 'Up and Left' ]
+            canvas.setdefault( attributes.Cy + X - 1, {} )[ attributes.Cx + Y - 1 ] = g[ 'Down and Right' ]
             D += dX
             dX -= 4
             X -= 1
@@ -182,34 +274,35 @@ def Circle( args ):
 toolbox[ 'Circle' ] = ( parser, Circle )
 
 # Text
-parser = argparse.ArgumentParser( prog='Line', description='Draw text' )
+parser = argparse.ArgumentParser( prog='Text', description='Draw text' )
 parser.add_argument( 'X', type=int )
 parser.add_argument( 'Y', type=int )
 parser.add_argument( 'text' )
 
-def Text( args ):
-    if args.text[ 0 ] in ( '"', "'" ):
-        args.text = args.text[ 1:-1 ]
+def Text( args, attributes ):
+    if attributes.text[ 0 ] in ( '"', "'" ):
+        attributes.text = attributes.text[ 1:-1 ]
 
-    for c in range( len( args.text ) ):
-        canvas.setdefault( args.Y, {} )[ args.X + c ] = args.text[ c ]
+    for c in range( len( attributes.text ) ):
+        canvas.setdefault( attributes.Y, {} )[ attributes.X + c ] = attributes.text[ c ]
 
 toolbox[ 'Text' ] = ( parser, Text )
- 
+
 if __name__ == '__main__':
     import re
 
     parser = argparse.ArgumentParser( description='Draw primatives in the terminal' )
+    parser.add_argument( '-g', '--glyphs', choices=[ 'unicode', 'ascii' ], default='unicode' )
     parser.add_argument( 'shapes', nargs='+' )
     args = parser.parse_args()
 
     for shape in args.shapes:
         split = shape.split( ' ', 1 )
-        primative, attributes = split + [''] * ( 2 - len( split ) ) 
+        primative, attributes = split + [''] * ( 2 - len( split ) )
         parser, painter = toolbox[ primative ]
         attributes = re.findall( "(?:\".*?\"|\S)+", attributes )
-        args = parser.parse_args( attributes )
-        painter( args )
+        attributes = parser.parse_args( attributes )
+        painter( args, attributes )
 
     for y in range( max( canvas.keys() ) + 1 ):
         if y not in canvas:
